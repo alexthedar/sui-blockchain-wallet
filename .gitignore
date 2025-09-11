@@ -1,0 +1,63 @@
+# Node dependencies
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Build outputs
+build/
+dist/
+out/
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+.env.*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Editor directories and settings
+.vscode/
+.idea/
+
+# Node dependencies
+frontend/node_modules/
+frontend/pnpm-lock.yaml
+frontend/package-lock.json
+frontend/yarn.lock
+
+# Build outputs
+frontend/build/
+frontend/dist/
+frontend/out/
+
+# Temporary files
+frontend/temp/
+frontend/tmp/
+frontend/*.tmp
+
+# Logs
+frontend/logs/
+frontend/*.log
+
+# Environment variables
+frontend/.env
+frontend/.env.*
+
+# OS-specific files
+frontend/.DS_Store
+frontend/Thumbs.db
+
+# Editor directories and settings
+frontend/.vscode/
+frontend/.idea/
