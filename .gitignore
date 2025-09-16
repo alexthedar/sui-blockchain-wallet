@@ -29,6 +29,10 @@ Thumbs.db
 # Editor directories and settings
 .vscode/
 .idea/
+.secret
+
+commands.txt
+
 
 # Node dependencies
 frontend/node_modules/
@@ -61,3 +65,4 @@ frontend/Thumbs.db
 # Editor directories and settings
 frontend/.vscode/
 frontend/.idea/
+frontend/.secret/
