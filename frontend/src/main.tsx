@@ -7,6 +7,7 @@ import NavigationProvider from "./providers/theme/navigation/NavigationProvider.
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SuiClientProvider, WalletProvider } from "@mysten/dapp-kit";
 import { networkConfig } from "./config/networkConfig.ts";
+import "@mysten/dapp-kit/dist/index.css";
 
 const queryClient = new QueryClient();
 
