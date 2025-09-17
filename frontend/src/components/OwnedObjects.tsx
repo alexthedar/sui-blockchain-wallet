@@ -9,7 +9,7 @@ export const OwnedObjects = () => {
   } = useSuiClientQuery(
     "getOwnedObjects",
     {
-      owner: account!.address,
+      owner: account?.address as string,
     },
     {
       enabled: !!account,
@@ -35,7 +35,16 @@ export const OwnedObjects = () => {
       )}
       <div className="space-y-2">
         {response.data.map((objRes) => {
-          return <div key={objRes.data?.objectId}></div>;
+          return (
+            <div
+              key={objRes.data?.objectId}
+              className="p-2 border rounded-lg bg-gray-50 dark:text-gray-800"
+            >
+              <p className="text-gray-700 dark:text-gray-300">
+                Object Id: {objRes.data?.objectId}
+              </p>
+            </div>
+          );
         })}
       </div>
     </div>
