@@ -1,18 +1,51 @@
-/*
+
 #[test_only]
 module voting_system::voting_system_tests;
-// uncomment this line to import the module
-// use voting_system::voting_system;
-
-const ENotImplemented: u64 = 0;
+use sui::test_scenario;
+use voting_system::proposal::{Self, Proposal};
+use voting_system::dashboard::{Self, AdminCap};
 
 #[test]
-fun test_voting_system() {
-    // pass
-}
 
-#[test, expected_failure(abort_code = ::voting_system::voting_system_tests::ENotImplemented)]
-fun test_voting_system_fail() {
-    abort ENotImplemented
+fun test_create_proposal(){
+
+    let user: address = @0xCA;
+    let mut scenario = test_scenario::begin(user);
+    {
+      dashboard::issue_admin_cap((scenario.ctx())); 
+    };
+
+    scenario.next_tx(user);
+    {
+        let title = b"Hi".to_string();
+        let description = b"There".to_string();
+        let admin_cap = scenario.take_from_sender<AdminCap>();
+
+        proposal::create( 
+            &admin_cap, 
+            title, 
+            description, 
+            2000000000, 
+            scenario.ctx() 
+        );
+
+        test_scenario::return_to_sender(&scenario, admin_cap)
+    };
+
+        scenario.next_tx(user);
+    {
+        let created_proposal = scenario.take_shared<Proposal>();
+        assert!(created_proposal.title() == b"Hi".to_string());
+        assert!(created_proposal.description() == b"There".to_string());
+        assert!(created_proposal.expiration() == 2000000000);
+        assert!(created_proposal.voted_no_count() == 0);
+        assert!(created_proposal.voted_yes_count() == 0);
+        assert!(created_proposal.creator() == user);
+        assert!(created_proposal.voter_registry().is_empty());
+        test_scenario::return_shared(created_proposal);
+    };
+
+    scenario.end();
+
+    
 }
-*/
