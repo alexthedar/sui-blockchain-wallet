@@ -17,7 +17,7 @@ fun init(otw: DASHBOARD, ctx: &mut TxContext) {
     new( otw, ctx);
 
     transfer::transfer(
-        AdminCap {id: object::new(ctx)}, 
+        AdminCap {id: object::new(ctx)},
         ctx.sender());
 }
 
@@ -26,7 +26,6 @@ public fun new(_otw: DASHBOARD, ctx: &mut TxContext) {
         id: object::new(ctx),
         proposals_ids: vector[]
     };
-
 
     transfer::share_object(dashboard);
 }
@@ -38,7 +37,7 @@ public fun register_proposal(self: &mut Dashboard, proposal_id: ID){
 #[test_only]
 public fun issue_admin_cap(ctx: &mut TxContext){
     transfer::transfer(
-        AdminCap{id: object::new(ctx)}, 
+        AdminCap{id: object::new(ctx)},
         ctx.sender()
     )
 }
