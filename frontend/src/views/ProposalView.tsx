@@ -1,22 +1,8 @@
 import { useSuiClientQuery } from "@mysten/dapp-kit";
 import { useNetworkVariable } from "../config/networkConfig";
 import { SuiObjectData } from "@mysten/sui/client";
-import { FC } from "react";
-
-type ProposalItemProps = {
-  id: string;
-};
-
-const ProposalItem: FC<ProposalItemProps> = () => {
-  return (
-    <div className="p-4 border rounded-lg shadow-sm bg-white dark:bg-slate-800 hover:border-blue-500 transition-colors">
-      <h2 className="text-xl font-semibold mb-2">Title: Hello There</h2>
-      <p className="text-gray-700 dark:text-gray-300">
-        Desc: What is your vote?
-      </p>
-    </div>
-  );
-};
+import { ProposalItem } from "../components/proposal/ProposalItem";
+import { EcText } from "../components/Shared";
 
 const ProposalView = () => {
   const dashboardId = useNetworkVariable("dashboardId");
@@ -32,19 +18,15 @@ const ProposalView = () => {
     },
   });
 
-  if (isPending)
-    return <div className="text-center text-gray-500"> Loading...</div>;
-
-  if (error) return <div className="text-red-500">Error: {error.message}</div>;
-
-  if (!dataResponse.data)
-    return <div className="text-center text-red-500">Not Found...</div>;
+  if (isPending) return <EcText isCentered text="Loading..." />;
+  if (error) return <EcText isError text={`Error: ${error.message}`} />;
+  if (!dataResponse.data) return <EcText text="Not Found..." />;
 
   return (
     <>
       <h1 className="text-4xl font-bold mb-8">New Proposals</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {getDashboardFields(dataResponse.data)?.proposals_id.map((id) => (
+        {getDashboardFields(dataResponse.data)?.proposals_ids.map((id) => (
           <ProposalItem key={id} id={id} />
         ))}
       </div>
@@ -55,7 +37,7 @@ const ProposalView = () => {
     if (data.content?.dataType !== "moveObject") return null;
     return data.content.fields as {
       id: SuiID;
-      proposals_id: string[];
+      proposals_ids: string[];
     };
   }
 };
