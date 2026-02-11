@@ -55,7 +55,12 @@ export const ProposalItem: FC<ProposalItemProps> = ({ id }) => {
           </div>
         </div>
       </div>
-      <VoteModal isOpen={isModelOpen} onClose={() => setModalOpen(false)} />
+      <VoteModal
+        proposal={proposal}
+        isOpen={isModelOpen}
+        onClose={() => setModalOpen(false)}
+        onVote={(votedYes: boolean) => console.log(votedYes)}
+      />
     </>
   );
 };
