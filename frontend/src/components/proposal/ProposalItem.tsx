@@ -32,7 +32,6 @@ export const ProposalItem: FC<ProposalItemProps> = ({ id }) => {
   const expiration = proposal.expiration;
 
   const isExpired = isUnixTimeExpired(expiration);
-  console.log("🚀 ~ ProposalItem ~ isExpired:", isExpired);
 
   return (
     <>
