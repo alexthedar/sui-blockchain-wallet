@@ -9,6 +9,11 @@ use sui::url::{Url, new_unsafe_from_bytes};
 
 const EDuplicateVote: u64 = 0;
 
+public enum ProposalStatus has store, drop, copy {
+    Active,
+    Delisted
+}
+
 public struct Proposal has key {
     id: UID,
     title: String,
@@ -17,13 +22,14 @@ public struct Proposal has key {
     voted_no_count: u64,
     expiration: u64,
     creator: address,
+    status: ProposalStatus,
     voters: Table<address, bool>
 }
 public struct VoteProofNFT has key {
     id: UID,
     proposal_id: ID,
-    name: string,
-    description: string,
+    name: String,
+    description: String,
     url: Url
 }
 
@@ -39,10 +45,18 @@ public fun vote(self: &mut Proposal, vote_yes: bool, ctx: &mut TxContext) {
     };
 
     self.voters.add(ctx.sender(), vote_yes);
-    issue_vote_proof(self, , vote_yes, ctx)
+    issue_vote_proof(self, vote_yes, ctx)
 }
 
 // === View Functions ===
+
+public fun status(self: &Proposal): &ProposalStatus {
+    &self.status
+}
+
+public fun vote_proof_url(self: &VoteProofNFT): Url {
+    self.url
+}
 
 public fun title(self: &Proposal): String {
     self.title
@@ -83,6 +97,7 @@ public fun create(
         voted_no_count: 0,
         expiration,
         creator: ctx.sender(),
+        status: ProposalStatus::Active,
         voters: table::new(ctx),
     };
 
@@ -92,6 +107,9 @@ public fun create(
     id
 }
 
+public fun change_status(self: &mut Proposal, _admin_cap: &AdminCap, status: ProposalStatus) {
+    self.status = status
+}
 
 // === Private Functions ===
 
@@ -117,4 +135,25 @@ fun issue_vote_proof(proposal: &Proposal, vote_yes: bool, ctx: &mut TxContext){
     };
 
     transfer::transfer(proof, ctx.sender())
+}
+
+
+#[test_only]
+public fun is_active(self: &Proposal): bool{
+    let status = self.status();
+
+    match(status) {
+        ProposalStatus::Active => true,
+        _ => false,
+    }
+}
+
+#[test_only]
+public fun set_delisted_status(self: &mut Proposal, _admin_cap: &AdminCap) {
+    self.change_status(_admin_cap, ProposalStatus::Delisted)
+}
+
+#[test_only]
+public fun set_active_status(self: &mut Proposal, _admin_cap: &AdminCap) {
+    self.change_status(_admin_cap, ProposalStatus::Active)
 }
