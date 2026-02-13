@@ -6,10 +6,27 @@ use voting_system::proposal::{Self, Proposal, VoteProofNFT};
 use voting_system::dashboard::{Self, AdminCap, Dashboard};
 use voting_system::dashboard::proposal_ids;
 use voting_system::proposal::vote_proof_url;
+use sui::clock;
 
 const EWrongVoteCount: u64 = 0;
 const EWrongNftUrl: u64 = 1;
 const EWrongStatus: u64 = 2;
+
+fun new_proposal(admin_cap: &AdminCap, ctx: &mut TxContext): ID {
+    let title = b"Test".to_string();
+    let description = b"Test".to_string();
+
+    let proposal_id = proposal::create( 
+        admin_cap, 
+        title, 
+        description, 
+        2000000000000, 
+        ctx 
+    );
+
+    proposal_id
+}
+
 
 #[test]
 fun test_create_proposal_with_admin_cap(){
@@ -32,7 +49,7 @@ fun test_create_proposal_with_admin_cap(){
         let created_proposal = scenario.take_shared<Proposal>();
         assert!(created_proposal.title() == b"Test".to_string());
         assert!(created_proposal.description() == b"Test".to_string());
-        assert!(created_proposal.expiration() == 2000000000);
+        assert!(created_proposal.expiration() == 2000000000000);
         assert!(created_proposal.voted_no_count() == 0);
         assert!(created_proposal.voted_yes_count() == 0);
         assert!(created_proposal.creator() == user);
@@ -99,21 +116,6 @@ fun test_register_proposal_as_admin() {
     scenario.end();
 }
 
-fun new_proposal(admin_cap: &AdminCap, ctx: &mut TxContext): ID {
-        let title = b"Test".to_string();
-        let description = b"Test".to_string();
-
-        let proposal_id = proposal::create( 
-            admin_cap, 
-            title, 
-            description, 
-            2000000000, 
-            ctx 
-        );
-
-        proposal_id
-}
-
 #[test]
 fun test_voting(){
     let bob: address = @0xB0B;
@@ -132,27 +134,52 @@ fun test_voting(){
         test_scenario::return_to_sender(&scenario, admin_cap)
     };
 
+    // scenario.next_tx(admin);
+    // {
+    //     let admin_cap = scenario.take_from_sender<AdminCap>();
+
+    //     let mut proposal = scenario.take_shared<Proposal>();
+
+    //     proposal.set_delisted_status(&admin_cap);
+
+    //     proposal.vote(true, scenario.ctx());
+
+    //     // assert!(proposal.voted_yes_count() == 1, EWrongVoteCount);
+
+    //     test_scenario::return_shared(proposal);
+
+    //     scenario.return_to_sender(admin_cap);
+    // };
+
     scenario.next_tx(bob);
     {
         let mut proposal = scenario.take_shared<Proposal>();
 
-        proposal.vote(true, scenario.ctx());
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(200000000000);
+
+        proposal.vote(true, &test_clock, scenario.ctx());
 
         assert!(proposal.voted_yes_count() == 1, EWrongVoteCount);
 
         test_scenario::return_shared(proposal);
+        test_clock.destroy_for_testing();
     };
 
     scenario.next_tx(alice);
     {
         let mut proposal = scenario.take_shared<Proposal>();
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(200000000000);
 
-        proposal.vote(true, scenario.ctx());
+        proposal.vote(true, &test_clock,scenario.ctx());
 
         assert!(proposal.voted_yes_count() == 2, EWrongVoteCount);
         assert!(proposal.voted_no_count() == 0, EWrongVoteCount);
 
         test_scenario::return_shared(proposal);
+        test_clock.destroy_for_testing();
+
     };
         scenario.end();
 }
@@ -178,11 +205,15 @@ fun test_duplicate_voting(){
     scenario.next_tx(bob);
     {
         let mut proposal = scenario.take_shared<Proposal>();
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(200000000000);
 
-        proposal.vote(true, scenario.ctx());
-        proposal.vote(true, scenario.ctx());
+        proposal.vote(true, &test_clock,scenario.ctx());
+        proposal.vote(true, &test_clock,scenario.ctx());
 
         test_scenario::return_shared(proposal);
+        test_clock.destroy_for_testing();
+
     };
 
     scenario.end();
@@ -208,10 +239,14 @@ fun test_issue_vote_proof(){
     scenario.next_tx(bob);
     {
         let mut proposal = scenario.take_shared<Proposal>();
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(200000000000);
 
-        proposal.vote(true, scenario.ctx());
+        proposal.vote(true, &test_clock,scenario.ctx());
 
         test_scenario::return_shared(proposal);
+        test_clock.destroy_for_testing();
+
     };
 
     scenario.next_tx(bob);
@@ -268,6 +303,79 @@ fun test_change_proposal_status(){
 
         test_scenario::return_shared(proposal);
         scenario.return_to_sender( admin_cap)
+
+    };
+
+
+    scenario.end();
+}
+
+#[test]
+#[expected_failure(abort_code = voting_system::proposal::EProposalExpired)]
+fun test_voting_expiration(){
+    let bob: address = @0xB0B;
+    let admin = @0xA01;
+
+    let mut scenario = test_scenario::begin(admin);
+    {
+      dashboard::issue_admin_cap((scenario.ctx())); 
+    };
+
+    scenario.next_tx(admin);
+    {
+        let admin_cap = scenario.take_from_sender<AdminCap>();
+        new_proposal(&admin_cap, scenario.ctx());
+        test_scenario::return_to_sender(&scenario, admin_cap)
+    };
+
+    scenario.next_tx(bob);
+    {
+        let mut proposal = scenario.take_shared<Proposal>();
+
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(2000000000000);
+
+        proposal.vote(true, &test_clock, scenario.ctx());
+
+        test_scenario::return_shared(proposal);
+        test_clock.destroy_for_testing();
+    };
+
+
+    scenario.end();
+}
+
+#[test]
+#[expected_failure(abort_code = test_scenario::EEmptyInventory)]
+fun test_remove_proposal(){
+    let admin = @0xA01;
+
+    let mut scenario = test_scenario::begin(admin);
+    {
+      dashboard::issue_admin_cap((scenario.ctx())); 
+    };
+
+    scenario.next_tx(admin);
+    {
+        let admin_cap = scenario.take_from_sender<AdminCap>();
+        new_proposal(&admin_cap, scenario.ctx());
+        test_scenario::return_to_sender(&scenario, admin_cap)
+    };
+
+    scenario.next_tx(admin);
+    {
+        let proposal = scenario.take_shared<Proposal>();
+        let admin_cap = scenario.take_from_sender<AdminCap>();
+
+        proposal.remove(&admin_cap);
+
+        scenario.return_to_sender(admin_cap);
+    };
+
+    scenario.next_tx(admin);
+    {
+        let proposal = scenario.take_shared<Proposal>();
+        test_scenario::return_shared(proposal);
 
     };
 

@@ -6,8 +6,11 @@ use std::string::String;
 use voting_system::dashboard::AdminCap;
 use sui::table::{Self, Table};
 use sui::url::{Url, new_unsafe_from_bytes};
+use sui::clock::Clock;
 
 const EDuplicateVote: u64 = 0;
+const EProposalDelisted: u64 = 1;
+const EProposalExpired: u64 = 2;
 
 public enum ProposalStatus has store, drop, copy {
     Active,
@@ -35,7 +38,10 @@ public struct VoteProofNFT has key {
 
 // === Public Functions ===
 
-public fun vote(self: &mut Proposal, vote_yes: bool, ctx: &mut TxContext) {
+public fun vote(self: &mut Proposal, vote_yes: bool, clock: &Clock, ctx: &mut TxContext) {
+
+    assert!(self.expiration > clock.timestamp_ms(), EProposalExpired );
+    assert!(self.is_active(), EProposalDelisted);
     assert!(!self.voters.contains(ctx.sender()), EDuplicateVote);
 
     if(vote_yes) {
@@ -80,6 +86,15 @@ public fun voters(self: &Proposal): &Table<address, bool> {
     &self.voters
 }
 
+public fun is_active(self: &Proposal): bool{
+    let status = self.status();
+
+    match(status) {
+        ProposalStatus::Active => true,
+        _ => false,
+    }
+}
+
 // === Admin Functions ===
 
 public fun create(
@@ -105,6 +120,22 @@ public fun create(
     transfer::share_object(proposal);
 
     id
+}
+
+public fun remove(self: Proposal, _admin_cap: &AdminCap){
+    let Proposal {
+        id, 
+        title: _,
+        description: _,
+        voted_yes_count: _,
+        voted_no_count: _,
+        expiration: _,
+        status: _,
+        voters,
+        creator: _,
+    } = self;
+    table::drop(voters);
+    object::delete(id);
 }
 
 public fun change_status(self: &mut Proposal, _admin_cap: &AdminCap, status: ProposalStatus) {
@@ -135,17 +166,6 @@ fun issue_vote_proof(proposal: &Proposal, vote_yes: bool, ctx: &mut TxContext){
     };
 
     transfer::transfer(proof, ctx.sender())
-}
-
-
-#[test_only]
-public fun is_active(self: &Proposal): bool{
-    let status = self.status();
-
-    match(status) {
-        ProposalStatus::Active => true,
-        _ => false,
-    }
 }
 
 #[test_only]

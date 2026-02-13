@@ -96,15 +96,15 @@ function parseProposal(data: SuiObjectData) {
   };
 }
 
-function isUnixTimeExpired(unixTimSec: number) {
-  return new Date(unixTimSec * 1000) < new Date();
+function isUnixTimeExpired(unixTimeMs: number) {
+  return new Date(unixTimeMs) < new Date();
 }
 
-function formatUnixTime(timestampSec: number) {
-  if (isUnixTimeExpired(timestampSec)) {
+function formatUnixTime(timestampMs: number) {
+  if (isUnixTimeExpired(timestampMs)) {
     return "Expired";
   }
-  return new Date(timestampSec * 1000).toLocaleString("en-US", {
+  return new Date(timestampMs).toLocaleString("en-US", {
     month: "short",
     day: "2-digit",
     year: "numeric",
